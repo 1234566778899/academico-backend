@@ -84,7 +84,6 @@ public interface NotaRepository extends JpaRepository<Nota, Integer> {
                                                       @Param("periodo") String periodo,
                                                       @Param("anio") Integer anio);
 
-    // ⬇️ NUEVO: Distribución de calificaciones por competencia (para gráfico de barras/torta)
     @Query(value = "SELECT n.calificacion, COUNT(*) as cantidad " +
             "FROM nota n " +
             "WHERE n.id_docente = :idDocente " +
@@ -96,7 +95,13 @@ public interface NotaRepository extends JpaRepository<Nota, Integer> {
             "  WHERE e.seccion = :seccion" +
             ") " +
             "GROUP BY n.calificacion " +
-            "ORDER BY FIELD(n.calificacion, 'AD', 'A', 'B', 'C')",
+            "ORDER BY CASE n.calificacion " +  // ⬅️ CAMBIO AQUÍ
+            "  WHEN 'AD' THEN 1 " +
+            "  WHEN 'A' THEN 2 " +
+            "  WHEN 'B' THEN 3 " +
+            "  WHEN 'C' THEN 4 " +
+            "  ELSE 5 " +
+            "END",
             nativeQuery = true)
     List<Object[]> findDistribucionCalificaciones(@Param("idDocente") int idDocente,
                                                   @Param("idCompetencia") int idCompetencia,
@@ -104,7 +109,7 @@ public interface NotaRepository extends JpaRepository<Nota, Integer> {
                                                   @Param("periodo") String periodo,
                                                   @Param("anio") Integer anio);
 
-    // ⬇️ NUEVO: Competencias con mayor riesgo (para HU-17)
+    // ⬇️ REEMPLAZA en NotaRepository.java
     @Query(value = "SELECT c.id_competencia, c.nombre_competencia, " +
             "SUM(CASE WHEN n.calificacion = 'AD' THEN 1 ELSE 0 END) as ad_count, " +
             "SUM(CASE WHEN n.calificacion = 'A' THEN 1 ELSE 0 END) as a_count, " +
@@ -114,7 +119,7 @@ public interface NotaRepository extends JpaRepository<Nota, Integer> {
             "INNER JOIN competencia c ON n.id_competencia = c.id_competencia " +
             "INNER JOIN estudiante e ON n.id_estudiante = e.id_estudiante " +
             "WHERE n.id_docente = :idDocente " +
-            "AND c.id_curso = :idCurso " +
+            "AND c.id_cursos = :idCurso " +  // ⬅️ id_cursos (minúsculas con guión bajo)
             "AND e.seccion = :seccion " +
             "AND n.periodo = :periodo " +
             "AND n.anio = :anio " +
